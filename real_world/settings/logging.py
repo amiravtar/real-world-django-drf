@@ -1,4 +1,11 @@
 from .base import BASE_DIR
+
+if not (log_path:=BASE_DIR / "logs").exists():
+    log_path.mkdir(parents=True,exist_ok=True)
+if not (log_path/"app.log").exists():
+    (log_path/"app.log").touch()
+    (log_path/"gerneral.log").touch()
+
 LOGGING_LEVEL = "DEBUG"
 LOGGING_DIR = "logs"
 LOGGING = {
