@@ -11,4 +11,4 @@ class Profile(models.Model):
     bio = models.CharField(blank=True, max_length=100)
     image = models.ImageField(upload_to=image_location)
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-
+    token = models.CharField(max_length=100, null=True, blank=True)
