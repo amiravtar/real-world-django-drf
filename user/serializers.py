@@ -25,13 +25,29 @@ class UserLoginSerializer(serializers.Serializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
-    token = serializers.SerializerMethodField()
-    bio = serializers.CharField(source="profile.bio", read_only=True)
-    image = serializers.CharField(source="profile.image", read_only=True)
+    token = serializers.SerializerMethodField(read_only=True)
+    bio = serializers.CharField(source="profile.bio", required=False)
+    image = serializers.CharField(source="profile.image", required=False)
 
     class Meta:
         model = User
-        fields = ("username", "email", "token", "bio", "image")
+        fields = ("username", "email", "token", "bio", "image", "password")
+        extra_kwargs = {
+            "password": {"write_only": True, "required": False},
+            "username": {"required": False},
+            "email": {"required": False},
+        }
+
+    def update(self, instance, validated_data: dict):
+        profile_data = validated_data.pop("profile", None)
+        if profile_data:
+            profile = instance.profile
+            for attr, value in profile_data.items():
+                setattr(profile, attr, value)
+            profile.save()
+        if (password:=validated_data.pop("password", None)):
+            instance.set_password(password)
+        return super().update(instance, validated_data)
 
     def get_token(self, obj):
         try:
@@ -44,6 +60,13 @@ class UserSerializer(serializers.ModelSerializer):
         # If token doesn't exist or is expired, generate a new token
         refresh = RefreshToken.for_user(obj)
         return str(refresh.access_token)
+
     def to_representation(self, instance):
         data = super().to_representation(instance)
-        return {'user': data}
+        return {"user": data}
+
+    def to_internal_value(self, data):
+        # Convert nested "user" data to flat representation
+        if "user" in data:
+            data = data["user"]
+        return super().to_internal_value(data)

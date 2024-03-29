@@ -8,7 +8,8 @@ REST_FRAMEWORK = {
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ]
 }
-# SIMPLE_JWT = {
-#     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=5),
-#     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
-# }
+SIMPLE_JWT = {
+    "AUTH_HEADER_TYPES": ("Bearer","Token",),
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=100),
+    # 'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+}
