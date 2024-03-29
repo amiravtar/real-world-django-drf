@@ -1,16 +1,18 @@
+from django.shortcuts import get_object_or_404, redirect
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.generics import RetrieveUpdateAPIView
+from rest_framework.generics import RetrieveUpdateAPIView, RetrieveAPIView
 from rest_framework.permissions import IsAuthenticated
 from user.serializers import (
     UserRegistrationSerializer,
     UserLoginSerializer,
     UserSerializer,
+    ProfileSerializer,
 )
 from rest_framework_simplejwt.tokens import RefreshToken, Token
 from django.contrib.auth import authenticate
-
+import pdb
 
 from user.models import Profile
 
@@ -52,3 +54,32 @@ class UserView(RetrieveUpdateAPIView):
 
     def get_object(self):
         return self.request.user
+
+
+class ProfileView(RetrieveAPIView):
+    serializer_class = ProfileSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self):
+        return get_object_or_404(Profile, user__username=self.kwargs["user"])
+
+    def get_serializer(self, *args, **kwargs):
+        return self.get_serializer_class()(
+            observer_user=self.request.user, instance=self.get_object()
+        )
+
+
+class FollowUser(APIView):
+    def post(self, request, user):
+        user_to_follow = get_object_or_404(Profile, user__username=user)
+        if not user_to_follow.followers.contains(request.user):
+            user_to_follow.followers.add(request.user)
+            user_to_follow.save()
+        return redirect("api:profile_view", user=user)
+
+    def delete(self, request, user):
+        user_to_unfollow = get_object_or_404(Profile, user__username=user)
+        if user_to_unfollow.followers.contains(request.user):
+            user_to_unfollow.followers.remove(request.user)
+            user_to_unfollow.save()
+        return redirect("api:profile_view", user=user)

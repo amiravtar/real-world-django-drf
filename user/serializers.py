@@ -1,7 +1,9 @@
 from rest_framework import serializers
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from rest_framework_simplejwt.tokens import RefreshToken
 from .models import Profile
+
+User = get_user_model()
 
 
 class UserRegistrationSerializer(serializers.Serializer):
@@ -45,7 +47,7 @@ class UserSerializer(serializers.ModelSerializer):
             for attr, value in profile_data.items():
                 setattr(profile, attr, value)
             profile.save()
-        if (password:=validated_data.pop("password", None)):
+        if password := validated_data.pop("password", None):
             instance.set_password(password)
         return super().update(instance, validated_data)
 
@@ -70,3 +72,26 @@ class UserSerializer(serializers.ModelSerializer):
         if "user" in data:
             data = data["user"]
         return super().to_internal_value(data)
+
+
+class ProfileSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(source="user.username", read_only=True)
+    following = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = Profile
+        fields = ["bio", "username", "image", "following"]
+        extra_kwargs = {"image": {"default": ""}}
+
+    def __init__(self, observer_user, instance=None, data=..., **kwargs):
+        self.observer_user = observer_user
+        super().__init__(instance, **kwargs)
+
+    def get_following(self, obj: Profile):
+        if obj.followers.contains(self.observer_user):
+            return True
+        return False
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        return {"profile": data}

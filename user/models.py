@@ -12,3 +12,6 @@ class Profile(models.Model):
     image = models.ImageField(upload_to=image_location)
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     token = models.CharField(max_length=100, null=True, blank=True)
+    followers = models.ManyToManyField(
+        settings.AUTH_USER_MODEL, related_name="followings"
+    )
