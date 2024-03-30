@@ -6,6 +6,7 @@ from rest_framework.generics import (
     RetrieveUpdateAPIView,
     RetrieveAPIView,
     ListCreateAPIView,
+    ListAPIView,
 )
 from rest_framework.permissions import IsAuthenticated
 from user.serializers import (
@@ -120,20 +121,39 @@ class ArticleCreatListView(ListCreateAPIView):
         favorited_by = self.request.query_params.get("favorited")
         if favorited_by:
             queryset = queryset.filter(favorited_by__user__username=favorited_by)
-        
-        queryset = queryset.order_by('-createdAt')
+
+        queryset = queryset.order_by("-createdAt")
 
         # Apply limit and offset
-        limit = self.request.query_params.get('limit', 20)
-        offset = self.request.query_params.get('offset', 0)
-        queryset = queryset[int(offset): int(offset) + int(limit)]
+        limit = self.request.query_params.get("limit", 20)
+        offset = self.request.query_params.get("offset", 0)
+        queryset = queryset[int(offset) : int(offset) + int(limit)]
 
         return queryset
+
     def list(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
         serializer = self.get_serializer(queryset, many=True)
-        data = {
-            'articles': serializer.data,
-            'articlesCount': queryset.count()
-        }
+        data = {"articles": serializer.data, "articlesCount": queryset.count()}
         return Response(data)
+
+
+class ArticleFeedListView(ListAPIView):
+    serializer_class = ArticleSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Article.objects.filter(author__in=self.request.user.followings.all())
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        serializer = self.get_serializer(queryset, many=True)
+        data = {"articles": serializer.data, "articlesCount": queryset.count()}
+        return Response(data)
+
+
+class ArticleDetailView(RetrieveAPIView):
+    serializer_class = ArticleSerializer
+
+    def get_object(self):
+        return get_object_or_404(Article, slug=self.kwargs["slug"])
