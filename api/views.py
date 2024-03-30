@@ -8,6 +8,7 @@ from rest_framework.generics import (
     ListCreateAPIView,
     ListAPIView,
     RetrieveUpdateDestroyAPIView,
+    DestroyAPIView,
 )
 from rest_framework.permissions import IsAuthenticated
 from user.serializers import (
@@ -17,11 +18,11 @@ from user.serializers import (
     ProfileSerializer,
 )
 from django.contrib.auth import authenticate
-from blog.serializers import ArticleSerializer
+from blog.serializers import ArticleSerializer, CommentSerializer
 from rest_framework_simplejwt.tokens import RefreshToken, Token
 from django.db.models import F
 from user.models import Profile
-from blog.models import Article
+from blog.models import Article, Tag, Comment
 
 
 class UserRegistration(APIView):
@@ -177,3 +178,42 @@ class ArticleFavoriteView(APIView):
             article.save()
 
         return redirect("api:article_detail", slug=slug)
+
+
+class TagsListView(APIView):
+    def get(self, request):
+        tags = Tag.objects.all()
+        return Response({"tags": list(tags.values_list("name", flat=True))})
+
+
+class AddGetCommentsView(ListCreateAPIView):
+    serializer_class = CommentSerializer
+    permission_classes = [IsAuthenticated]
+    def get_permissions(self):
+        if self.request.method == "POST":
+            # Require authentication for POST requests
+            return [IsAuthenticated()]
+        else:
+            # Allow anonymous access for GET requests
+            return []
+    def get_queryset(self):
+        return Comment.objects.filter(article__slug=self.kwargs["slug"])
+
+    def get_serializer_context(self):
+        data = super().get_serializer_context()
+        data["request"] = self.request
+        data["slug"] = self.kwargs["slug"]
+        return data
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        serializer = self.get_serializer(queryset, many=True)
+        data = {"comments": serializer.data, "commentsCount": queryset.count()}
+        return Response(data)
+
+
+class DeleteCommentView(DestroyAPIView):
+    serializer_class = CommentSerializer
+    permission_classes = [IsAuthenticated]
+    queryset = Comment.objects.all()
+    lookup_field = "id"

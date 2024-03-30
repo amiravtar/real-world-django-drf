@@ -88,6 +88,8 @@ class ProfileSerializer(serializers.ModelSerializer):
         super().__init__(instance, **kwargs)
 
     def get_following(self, obj: Profile):
+        if not self.observer_user.is_authenticated:
+            return False
         if obj.followers.contains(self.observer_user):
             return True
         return False

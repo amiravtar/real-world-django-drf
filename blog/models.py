@@ -20,7 +20,6 @@ class Article(models.Model):
     createdAt = models.DateTimeField(auto_now_add=True)
     updatedAt = models.DateTimeField(auto_now=True)
     favoritesCount = models.IntegerField(default=0)
-    comments = models.ManyToManyField("Comment", related_name="articles")
 
     def save(self, *args, **kwargs):
         # Generate slug from the title if not provided
@@ -35,3 +34,4 @@ class Comment(models.Model):
     createdAt = models.DateTimeField(auto_now_add=True)
     updatedAt = models.DateTimeField(auto_now=True)
     body = models.TextField()
+    article=models.ForeignKey(Article,on_delete=models.CASCADE)

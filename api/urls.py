@@ -8,7 +8,10 @@ from .views import (
     ArticleCreatListView,
     ArticleFeedListView,
     ArticleDetailView,
-    ArticleFavoriteView
+    ArticleFavoriteView,
+    TagsListView,
+    AddGetCommentsView,
+    DeleteCommentView,
 )
 
 app_name = "api"
@@ -25,4 +28,10 @@ urlpatterns = [
     path("articles/feed", ArticleFeedListView.as_view(), name="article_feed"),
     path("articles/<slug:slug>/favorite", ArticleFavoriteView.as_view(), name="article_favorite"),
     path("articles/<slug:slug>", ArticleDetailView.as_view(), name="article_detail"),
+    #
+    path("articles/<slug:slug>/comments", AddGetCommentsView.as_view(), name="comment_add_get"),
+    path("articles/<slug:slug>/comments/<int:id>", DeleteCommentView.as_view(), name="comment_delete"),
+    #tags
+    path("tags", TagsListView.as_view(), name="tags_list"),
+
 ]
