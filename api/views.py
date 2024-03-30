@@ -16,11 +16,10 @@ from user.serializers import (
     UserSerializer,
     ProfileSerializer,
 )
+from django.contrib.auth import authenticate
 from blog.serializers import ArticleSerializer
 from rest_framework_simplejwt.tokens import RefreshToken, Token
-from django.contrib.auth import authenticate
-import pdb
-
+from django.db.models import F
 from user.models import Profile
 from blog.models import Article
 
@@ -111,12 +110,12 @@ class ArticleCreatListView(ListCreateAPIView):
         # Filter by tag
         tag = self.request.query_params.get("tag")
         if tag:
-            queryset = queryset.filter(tagList__contains=[tag])
+            queryset = queryset.filter(tags__name=tag)
 
         # Filter by author
         author = self.request.query_params.get("author")
         if author:
-            queryset = queryset.filter(author__username=author)
+            queryset = queryset.filter(author__user__username=author)
 
         # Filter by favorited
         favorited_by = self.request.query_params.get("favorited")
@@ -157,6 +156,24 @@ class ArticleDetailView(RetrieveUpdateDestroyAPIView):
     serializer_class = ArticleSerializer
     lookup_field = "slug"
     queryset = Article.objects.all()
-    
-    # def get_object(self):
-    #     return get_object_or_404(Article, slug=self.kwargs["slug"])
+
+
+class ArticleFavoriteView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, slug):
+        article = get_object_or_404(Article, slug=slug)
+        if not article.favorited_by.contains(request.user.profile):
+            article.favorited_by.add(request.user.profile)
+            article.favoritesCount += F("favoritesCount") + 1
+            article.save()
+        return redirect("api:article_detail", slug=slug)
+
+    def delete(self, request, slug):
+        article = get_object_or_404(Article, slug=slug)
+        if article.favorited_by.contains(request.user.profile):
+            article.favorited_by.remove(request.user.profile)
+            article.favoritesCount += F("favoritesCount") - 1
+            article.save()
+
+        return redirect("api:article_detail", slug=slug)

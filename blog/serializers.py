@@ -63,7 +63,7 @@ class ArticleSerializer(serializers.ModelSerializer):
         return article
 
     def get_tagList(self, instance: Article):
-        return list(instance.tags.values_list("name", flat=True))
+        return list(instance.tags.values_list("name", flat=True).order_by("name"))
 
     def get_author(self, instance: Article):
         if self.observer_user and self.instance:

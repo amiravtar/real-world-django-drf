@@ -8,6 +8,7 @@ from .views import (
     ArticleCreatListView,
     ArticleFeedListView,
     ArticleDetailView,
+    ArticleFavoriteView
 )
 
 app_name = "api"
@@ -22,5 +23,6 @@ urlpatterns = [
     #articles
     path("articles", ArticleCreatListView.as_view(), name="article_create_list"),
     path("articles/feed", ArticleFeedListView.as_view(), name="article_feed"),
+    path("articles/<slug:slug>/favorite", ArticleFavoriteView.as_view(), name="article_favorite"),
     path("articles/<slug:slug>", ArticleDetailView.as_view(), name="article_detail"),
 ]
