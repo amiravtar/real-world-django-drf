@@ -3,19 +3,21 @@ from django.contrib.auth import get_user_model
 from .models import Article, Tag
 from user.serializers import ProfileSerializer
 from django.db.models.query import QuerySet
+
 User = get_user_model()
 
 
 class ArticleSerializer(serializers.ModelSerializer):
-    tagList = serializers.SerializerMethodField()
+    tagList = serializers.SerializerMethodField(read_only=True)
     createdAt = serializers.DateTimeField(
-        format="%Y-%m-%dT%H:%M:%S.%fZ", required=False
+        format="%Y-%m-%dT%H:%M:%S.%fZ", required=False, read_only=True
     )
     updatedAt = serializers.DateTimeField(
-        format="%Y-%m-%dT%H:%M:%S.%fZ", required=False
+        format="%Y-%m-%dT%H:%M:%S.%fZ", required=False, read_only=True
     )
     author = serializers.SerializerMethodField(read_only=True)
-    favorited=serializers.SerializerMethodField(read_only=True)
+    favorited = serializers.SerializerMethodField(read_only=True)
+
     class Meta:
         model = Article
         fields = [
@@ -29,8 +31,15 @@ class ArticleSerializer(serializers.ModelSerializer):
             "favoritesCount",
             "tagList",
             "author",
-            "favorited"
+            "favorited",
         ]
+        extra_kwargs = {
+            "slug": {"read_only": True},
+            "favoritesCount": {"read_only": True},
+            "body": {"required": False},
+            "title": {"required": False},
+            "description": {"required": False},
+        }
 
     def __init__(self, *args, **kwargs):
         # Extract the required variable from kwargs
@@ -61,12 +70,14 @@ class ArticleSerializer(serializers.ModelSerializer):
             return ProfileSerializer(
                 observer_user=self.observer_user, instance=instance.author
             ).data
+
     def get_favorited(self, obj: Article):
         if not self.observer_user:
             return False
         if self.observer_user.profile.favorite_articles.contains(obj):
             return True
         return False
+
     def to_internal_value(self, data: dict):
         if "article" not in data:
             raise serializers.ValidationError("Incomming json is not valid")
@@ -77,7 +88,7 @@ class ArticleSerializer(serializers.ModelSerializer):
         return data
 
     def to_representation(self, instance):
-        if not isinstance(self.instance,QuerySet):
+        if not isinstance(self.instance, QuerySet):
             data = super().to_representation(instance)
             data["author"] = data["author"]["profile"]
             return {"article": data}

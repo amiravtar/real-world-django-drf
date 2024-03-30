@@ -7,6 +7,7 @@ from rest_framework.generics import (
     RetrieveAPIView,
     ListCreateAPIView,
     ListAPIView,
+    RetrieveUpdateDestroyAPIView,
 )
 from rest_framework.permissions import IsAuthenticated
 from user.serializers import (
@@ -152,8 +153,10 @@ class ArticleFeedListView(ListAPIView):
         return Response(data)
 
 
-class ArticleDetailView(RetrieveAPIView):
+class ArticleDetailView(RetrieveUpdateDestroyAPIView):
     serializer_class = ArticleSerializer
-
-    def get_object(self):
-        return get_object_or_404(Article, slug=self.kwargs["slug"])
+    lookup_field = "slug"
+    queryset = Article.objects.all()
+    
+    # def get_object(self):
+    #     return get_object_or_404(Article, slug=self.kwargs["slug"])
