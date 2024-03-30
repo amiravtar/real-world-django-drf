@@ -2,7 +2,7 @@ from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from .models import Article, Tag
 from user.serializers import ProfileSerializer
-
+from django.db.models.query import QuerySet
 User = get_user_model()
 
 
@@ -32,10 +32,10 @@ class ArticleSerializer(serializers.ModelSerializer):
             "favorited"
         ]
 
-    def __init__(self, observer_user=None, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         # Extract the required variable from kwargs
-        self.observer_user = observer_user
         super().__init__(*args, **kwargs)
+        self.observer_user = self.context["request"].user
         # Pass the variable to ProfileSerializer when initializing
 
     def create(self, validated_data):
@@ -77,6 +77,8 @@ class ArticleSerializer(serializers.ModelSerializer):
         return data
 
     def to_representation(self, instance):
-        data = super().to_representation(instance)
-        data["author"] = data["author"]["profile"]
-        return {"article": data}
+        if not isinstance(self.instance,QuerySet):
+            data = super().to_representation(instance)
+            data["author"] = data["author"]["profile"]
+            return {"article": data}
+        return super().to_representation(instance)

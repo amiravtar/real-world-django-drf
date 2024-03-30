@@ -2,7 +2,11 @@ from django.shortcuts import get_object_or_404, redirect
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.generics import RetrieveUpdateAPIView, RetrieveAPIView,ListCreateAPIView
+from rest_framework.generics import (
+    RetrieveUpdateAPIView,
+    RetrieveAPIView,
+    ListCreateAPIView,
+)
 from rest_framework.permissions import IsAuthenticated
 from user.serializers import (
     UserRegistrationSerializer,
@@ -16,6 +20,7 @@ from django.contrib.auth import authenticate
 import pdb
 
 from user.models import Profile
+from blog.models import Article
 
 
 class UserRegistration(APIView):
@@ -91,14 +96,44 @@ class ArticleCreatListView(ListCreateAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_permissions(self):
-        if self.request.method == 'POST':
+        if self.request.method == "POST":
             # Require authentication for POST requests
             return [IsAuthenticated()]
         else:
             # Allow anonymous access for GET requests
             return []
-    def get_serializer(self, *args, **kwargs):
-        if self.request.method == 'POST':
-            return self.get_serializer_class()(
-                observer_user=self.request.user,**kwargs
-            )
+
+    def get_queryset(self):
+        queryset = Article.objects.all()
+
+        # Filter by tag
+        tag = self.request.query_params.get("tag")
+        if tag:
+            queryset = queryset.filter(tagList__contains=[tag])
+
+        # Filter by author
+        author = self.request.query_params.get("author")
+        if author:
+            queryset = queryset.filter(author__username=author)
+
+        # Filter by favorited
+        favorited_by = self.request.query_params.get("favorited")
+        if favorited_by:
+            queryset = queryset.filter(favorited_by__user__username=favorited_by)
+        
+        queryset = queryset.order_by('-createdAt')
+
+        # Apply limit and offset
+        limit = self.request.query_params.get('limit', 20)
+        offset = self.request.query_params.get('offset', 0)
+        queryset = queryset[int(offset): int(offset) + int(limit)]
+
+        return queryset
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        serializer = self.get_serializer(queryset, many=True)
+        data = {
+            'articles': serializer.data,
+            'articlesCount': queryset.count()
+        }
+        return Response(data)
