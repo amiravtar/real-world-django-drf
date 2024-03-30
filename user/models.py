@@ -15,4 +15,4 @@ class Profile(models.Model):
     followers = models.ManyToManyField(
         settings.AUTH_USER_MODEL, related_name="followings"
     )
-    favorite_comments = models.ManyToManyField("blog.Article", related_name="favorited_by")
+    favorite_articles = models.ManyToManyField("blog.Article", related_name="favorited_by")

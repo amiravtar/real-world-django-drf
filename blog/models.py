@@ -12,9 +12,10 @@ class Tag(models.Model):
 
 class Article(models.Model):
     title = models.CharField(max_length=255)
+    author = models.ForeignKey("user.Profile", on_delete=models.CASCADE)
     description = models.TextField()
     body = models.TextField()
-    slug = models.SlugField(unique=True, max_length=255, null=False, blank=False)
+    slug = models.SlugField(unique=True, max_length=255, blank=True)
     tags = models.ManyToManyField("Tag", related_name="articles")
     createdAt = models.DateTimeField(auto_now_add=True)
     updatedAt = models.DateTimeField(auto_now=True)

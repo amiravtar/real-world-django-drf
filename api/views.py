@@ -2,7 +2,7 @@ from django.shortcuts import get_object_or_404, redirect
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.generics import RetrieveUpdateAPIView, RetrieveAPIView
+from rest_framework.generics import RetrieveUpdateAPIView, RetrieveAPIView,ListCreateAPIView
 from rest_framework.permissions import IsAuthenticated
 from user.serializers import (
     UserRegistrationSerializer,
@@ -10,6 +10,7 @@ from user.serializers import (
     UserSerializer,
     ProfileSerializer,
 )
+from blog.serializers import ArticleSerializer
 from rest_framework_simplejwt.tokens import RefreshToken, Token
 from django.contrib.auth import authenticate
 import pdb
@@ -83,3 +84,21 @@ class FollowUser(APIView):
             user_to_unfollow.followers.remove(request.user)
             user_to_unfollow.save()
         return redirect("api:profile_view", user=user)
+
+
+class ArticleCreatListView(ListCreateAPIView):
+    serializer_class = ArticleSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_permissions(self):
+        if self.request.method == 'POST':
+            # Require authentication for POST requests
+            return [IsAuthenticated()]
+        else:
+            # Allow anonymous access for GET requests
+            return []
+    def get_serializer(self, *args, **kwargs):
+        if self.request.method == 'POST':
+            return self.get_serializer_class()(
+                observer_user=self.request.user,**kwargs
+            )
